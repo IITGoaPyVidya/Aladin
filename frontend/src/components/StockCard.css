@@ -1,0 +1,63 @@
+/* StockCard styles */
+
+.stock-card {
+  background: #1e2a3a;
+  border: 1px solid #2d3f55;
+  border-radius: 10px;
+  padding: 1.2rem 1.4rem;
+  min-width: 160px;
+  cursor: default;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.stock-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(226, 201, 126, 0.15);
+}
+
+.stock-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.3rem;
+}
+
+.stock-symbol {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #e2c97e;
+}
+
+.stock-change {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.stock-name {
+  font-size: 0.78rem;
+  color: #7a8fa6;
+  margin-bottom: 0.6rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.stock-price {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #dce6f5;
+}
+
+.stock-change-abs {
+  font-size: 0.82rem;
+  margin-top: 0.2rem;
+}
+
+.positive {
+  color: #4caf91;
+}
+
+.negative {
+  color: #e05c5c;
+}

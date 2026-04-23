@@ -1,0 +1,146 @@
+/* Dashboard page styles */
+
+.dashboard-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.dashboard-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #dce6f5;
+  margin-bottom: 1.5rem;
+}
+
+/* Sections */
+.section {
+  margin-bottom: 2.5rem;
+}
+
+.section-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #e2c97e;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Loading / error */
+.loading-text {
+  color: #7a8fa6;
+  font-size: 0.9rem;
+}
+
+.error-text {
+  color: #e05c5c;
+  font-size: 0.9rem;
+}
+
+/* Top stocks strip */
+.stocks-strip {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Charts grid */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.chart-card {
+  background: #1e2a3a;
+  border: 1px solid #2d3f55;
+  border-radius: 12px;
+  padding: 1.4rem 1.4rem 1rem;
+}
+
+.chart-card.wide {
+  grid-column: 1 / -1;
+}
+
+/* Recommendations table */
+.reco-table-wrapper {
+  overflow-x: auto;
+}
+
+.reco-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.reco-table th {
+  background: #152232;
+  color: #7a8fa6;
+  text-align: left;
+  padding: 0.65rem 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.reco-table td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid #1e2a3a;
+  color: #dce6f5;
+  vertical-align: top;
+}
+
+.reco-table tr:last-child td {
+  border-bottom: none;
+}
+
+.reco-table tr:hover td {
+  background: #1a2535;
+}
+
+.sym {
+  font-weight: 700;
+  color: #e2c97e;
+}
+
+.rationale {
+  color: #7a8fa6;
+  max-width: 360px;
+  line-height: 1.5;
+}
+
+/* Action badges */
+.action-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.action-buy {
+  background: rgba(76, 175, 145, 0.2);
+  color: #4caf91;
+}
+
+.action-sell {
+  background: rgba(224, 92, 92, 0.2);
+  color: #e05c5c;
+}
+
+.action-hold {
+  background: rgba(226, 201, 126, 0.2);
+  color: #e2c97e;
+}
+
+@media (max-width: 768px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-card.wide {
+    grid-column: auto;
+  }
+}
