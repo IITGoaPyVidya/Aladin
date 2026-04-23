@@ -1,0 +1,35 @@
+version: "3.9"
+
+# Local development compose file.
+# Run:  docker compose up --build
+# Frontend → http://localhost:5173  (Vite dev server with HMR)
+# Backend  → http://localhost:8000  (Uvicorn)
+
+services:
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      # Hot-reload: mount source so uvicorn --reload picks up changes
+      - ./backend:/app
+    environment:
+      - PORT=8000
+
+  frontend:
+    build:
+      context: ./frontend
+      target: builder          # use the build stage for dev (serves via Vite)
+    command: npm run dev -- --host
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules       # don't override container node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend

@@ -1,0 +1,89 @@
+/* Search page styles */
+
+.search-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.search-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #dce6f5;
+  margin-bottom: 0.5rem;
+}
+
+.search-hint {
+  color: #7a8fa6;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.search-hint em {
+  color: #e2c97e;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.search-bar-wrapper {
+  margin-bottom: 1.5rem;
+}
+
+.result-count {
+  font-size: 0.88rem;
+  color: #7a8fa6;
+  margin-bottom: 1rem;
+}
+
+.error-text {
+  color: #e05c5c;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+/* Results table */
+.results-table-wrapper {
+  overflow-x: auto;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.results-table th {
+  background: #152232;
+  color: #7a8fa6;
+  text-align: left;
+  padding: 0.65rem 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.results-table td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid #1e2a3a;
+  color: #dce6f5;
+}
+
+.results-table tr:last-child td {
+  border-bottom: none;
+}
+
+.results-table tr:hover td {
+  background: #1a2535;
+}
+
+.sym {
+  font-weight: 700;
+  color: #e2c97e;
+}
+
+.positive {
+  color: #4caf91;
+}
+
+.negative {
+  color: #e05c5c;
+}
