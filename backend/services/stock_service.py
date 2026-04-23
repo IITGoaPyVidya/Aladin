@@ -4,7 +4,7 @@ and recommendation generation. Currently returns mock data; replace
 with real NSE/BSE API calls when API keys are available.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from models.stock import (
@@ -196,7 +196,7 @@ def get_recommendations() -> RecommendationResponse:
 
     return RecommendationResponse(
         recommendations=recommendations,
-        generated_at=datetime.utcnow().isoformat() + "Z",
+        generated_at=datetime.now(timezone.utc).isoformat(),
         disclaimer=(
             "These recommendations are for informational purposes only and do not "
             "constitute financial advice. Please consult a SEBI-registered advisor "
