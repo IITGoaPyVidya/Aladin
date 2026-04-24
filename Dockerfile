@@ -67,6 +67,8 @@ exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf\n\
 RUN echo '[supervisord]\n\
 nodaemon=true\n\
 user=root\n\
+logfile=/dev/stdout\n\
+logfile_maxbytes=0\n\
 \n\
 [program:nginx]\n\
 command=nginx -g "daemon off;"\n\
@@ -76,16 +78,20 @@ stdout_logfile=/dev/stdout\n\
 stdout_logfile_maxbytes=0\n\
 stderr_logfile=/dev/stderr\n\
 stderr_logfile_maxbytes=0\n\
+priority=10\n\
 \n\
 [program:backend]\n\
-command=python -m uvicorn main:app --host 127.0.0.1 --port 8000\n\
+command=python -m uvicorn main:app --host 0.0.0.0 --port 8000\n\
 directory=/app/backend\n\
 autostart=true\n\
 autorestart=true\n\
 stdout_logfile=/dev/stdout\n\
 stdout_logfile_maxbytes=0\n\
 stderr_logfile=/dev/stderr\n\
-stderr_logfile_maxbytes=0\n' > /etc/supervisor/conf.d/supervisord.conf
+stderr_logfile_maxbytes=0\n\
+priority=5\n\
+stopasgroup=true\n\
+killasgroup=true\n' > /etc/supervisor/conf.d/supervisord.conf
 
 WORKDIR /app
 
