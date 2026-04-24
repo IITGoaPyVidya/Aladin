@@ -7,12 +7,16 @@
 }
 
 :root {
-  /* Premium Color Palette */
-  --primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* Premium Colors */
+  --primary-start: #667eea;
+  --primary-end: #764ba2;
   --primary-dark: #5568d3;
-  --secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  --success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  --warning: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  --secondary-start: #f093fb;
+  --secondary-end: #f5576c;
+  --success-start: #4facfe;
+  --success-end: #00f2fe;
+  --warning-start: #fa709a;
+  --warning-end: #fee140;
   --glass: rgba(255, 255, 255, 0.1);
   --glass-dark: rgba(0, 0, 0, 0.1);
   
@@ -92,7 +96,7 @@ body {
   font-size: 1.1rem;
   font-weight: 600;
   color: white;
-  background: var(--primary);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   border-radius: 50px;
   cursor: pointer;
@@ -127,7 +131,7 @@ body {
 
 /* Gradient Text */
 .gradient-text {
-  background: var(--primary);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
