@@ -54,7 +54,6 @@ def clean_company_name(name: str) -> str:
 def search_stocks(query: str) -> Dict[str, Any]:
     """
     Search for stocks using Alpha Vantage SYMBOL_SEARCH API.
-    Returns dynamic results from global stock markets.
     
     Args:
         query: Search keyword (company name or symbol)
@@ -73,8 +72,32 @@ def search_stocks(query: str) -> Dict[str, Any]:
     try:
         # Alpha Vantage SYMBOL_SEARCH API
         url = f"{ALPHA_VANTAGE_BASE_URL}?function=SYMBOL_SEARCH&keywords={query}&apikey={ALPHA_VANTAGE_API_KEY}"
+        print(f"[DEBUG] Alpha Vantage URL: {url}")
+        
         response = requests.get(url, timeout=10)
+        print(f"[DEBUG] Response status: {response.status_code}")
+        
         data = response.json()
+        print(f"[DEBUG] Response data keys: {list(data.keys())}")
+        print(f"[DEBUG] Full response: {data}")
+        
+        # Check for rate limit
+        if 'Note' in data:
+            return {
+                "query": query,
+                "suggestions": [],
+                "total": 0,
+                "error": "API rate limit exceeded. Please try again in a minute."
+            }
+        
+        # Check for API error messages
+        if 'Error Message' in data:
+            return {
+                "query": query,
+                "suggestions": [],
+                "total": 0,
+                "error": f"API Error: {data['Error Message']}"
+            }
         
         if 'bestMatches' in data and data['bestMatches']:
             # Extract stock information
@@ -90,6 +113,7 @@ def search_stocks(query: str) -> Dict[str, Any]:
                 }
                 suggestions.append(stock_info)
             
+            print(f"[DEBUG] Returning {len(suggestions)} results")
             return {
                 "query": query,
                 "suggestions": suggestions,
@@ -97,6 +121,7 @@ def search_stocks(query: str) -> Dict[str, Any]:
                 "message": f"Found {len(suggestions)} matching stocks"
             }
         else:
+            print(f"[DEBUG] No bestMatches in response")
             return {
                 "query": query,
                 "suggestions": [],
@@ -119,12 +144,14 @@ def search_stocks(query: str) -> Dict[str, Any]:
             "error": "Connection error - Check your internet connection"
         }
     except Exception as e:
+        print(f"[DEBUG] Exception: {str(e)}")
         return {
             "query": query,
             "suggestions": [],
             "total": 0,
             "error": f"Search error: {str(e)}"
         }
+
 
 
 def get_stock_details(stock_name: str) -> Dict[str, Any]:
