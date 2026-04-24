@@ -31,3 +31,4 @@ frontend/.env.production
 # Logs
 *.log
 npm-debug.log*
+experiment/

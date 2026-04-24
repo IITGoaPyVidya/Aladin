@@ -55,6 +55,8 @@ cp frontend/.env.example frontend/.env.local
 
 # 2. Start both services
 docker compose up --build
+
+http://172.18.0.2:5173/
 ```
 
 - **Frontend**: http://localhost:5173  

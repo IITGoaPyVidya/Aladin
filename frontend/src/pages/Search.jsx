@@ -1,16 +1,18 @@
 /**
- * Search page — lets users search for stocks by name or symbol,
- * then displays a table of results fetched from the backend.
+ * Search page — Search for stocks by keyword and view suggestions.
+ * Click on a stock to view comprehensive details.
  */
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import SearchBar from "../components/SearchBar";
 import { searchStocks } from "../services/api";
 import "./Search.css";
 
 export default function Search() {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
   const [total, setTotal] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -24,23 +26,26 @@ export default function Search() {
 
     try {
       const data = await searchStocks(query);
-      setResults(data.results);
-      setTotal(data.total);
+      setSuggestions(data.suggestions || []);
+      setTotal(data.total || 0);
     } catch (err) {
       setError(err.message || "Unknown error");
-      setResults([]);
+      setSuggestions([]);
       setTotal(null);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleStockClick = (stockName) => {
+    navigate(`/stock/${encodeURIComponent(stockName)}`);
+  };
+
   return (
     <div className="search-page">
-      <h1 className="search-title">Search Stocks</h1>
+      <h1 className="search-title">🔍 Search Indian Stocks</h1>
       <p className="search-hint">
-        Search by ticker symbol (e.g. <em>TCS</em>) or company name (e.g.{" "}
-        <em>Infosys</em>). Leave blank to browse all stocks.
+        Search by company name or keyword (e.g. <em>Tata</em>, <em>Reliance</em>, <em>Bank</em>)
       </p>
 
       <div className="search-bar-wrapper">
@@ -53,52 +58,40 @@ export default function Search() {
       </div>
 
       {/* Status messages */}
-      {error && <p className="error-text">⚠ {error}</p>}
+      {error && <p className="error-text">⚠️ {error}</p>}
       {searched && !loading && !error && (
         <p className="result-count">
           {total === 0
             ? "No stocks found."
-            : `Found ${total} stock${total !== 1 ? "s" : ""}`}
+            : `Found ${total} matching stock${total !== 1 ? "s" : ""}`}
         </p>
       )}
 
-      {/* Results table */}
-      {results.length > 0 && (
-        <div className="results-table-wrapper">
-          <table className="results-table">
-            <thead>
-              <tr>
-                <th>Symbol</th>
-                <th>Name</th>
-                <th>Price (₹)</th>
-                <th>Change</th>
-                <th>Change %</th>
-                <th>Volume</th>
-                <th>Sector</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.map((s) => {
-                const isPos = s.change >= 0;
-                return (
-                  <tr key={s.symbol}>
-                    <td className="sym">{s.symbol}</td>
-                    <td>{s.name}</td>
-                    <td>₹{s.price.toFixed(2)}</td>
-                    <td className={isPos ? "positive" : "negative"}>
-                      {isPos ? "+" : ""}
-                      {s.change.toFixed(2)}
-                    </td>
-                    <td className={isPos ? "positive" : "negative"}>
-                      {isPos ? "▲" : "▼"} {Math.abs(s.change_percent).toFixed(2)}%
-                    </td>
-                    <td>{s.volume.toLocaleString("en-IN")}</td>
-                    <td>{s.sector || "—"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {/* Dynamic Search Results from Alpha Vantage */}
+      {suggestions.length > 0 && (
+        <div className="suggestions-container">
+          <h2>📊 Search Results</h2>
+          <p className="hint-text">Found {total} stocks - Click any card to view live data</p>
+          <div className="suggestions-grid">
+            {suggestions.map((stock, idx) => (
+              <div
+                key={idx}
+                className="suggestion-card"
+                onClick={() => handleStockClick(stock.name)}
+              >
+                <div className="stock-header-mini">
+                  <div className="stock-symbol">{stock.symbol}</div>
+                  <div className="match-score">Match: {(parseFloat(stock.matchScore) * 100).toFixed(0)}%</div>
+                </div>
+                <div className="stock-name">{stock.name}</div>
+                <div className="stock-meta">
+                  <span className="region-badge">{stock.region}</span>
+                  <span className="type-badge">{stock.type}</span>
+                </div>
+                <div className="view-details">View Live Data →</div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

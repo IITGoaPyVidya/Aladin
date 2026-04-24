@@ -19,7 +19,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { searchStocks, getRecommendations } from "../services/api";
+import { searchStocks, getPopularStocks } from "../services/api";
 import StockCard from "../components/StockCard";
 import "./Dashboard.css";
 
@@ -55,15 +55,15 @@ const VOLUME_DATA = [
 
 export default function Dashboard() {
   const [stocks, setStocks] = useState([]);
-  const [recommendations, setRecommendations] = useState([]);
+  const [popularStocks, setPopularStocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    Promise.all([searchStocks(""), getRecommendations()])
-      .then(([stocksRes, recoRes]) => {
+    Promise.all([searchStocks(""), getPopularStocks()])
+      .then(([stocksRes, popularRes]) => {
         setStocks(stocksRes.results.slice(0, 6));
-        setRecommendations(recoRes.recommendations);
+        setPopularStocks(popularRes.stocks || []);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -159,38 +159,15 @@ export default function Dashboard() {
         </section>
       </div>
 
-      {/* ── Recommendations table ── */}
+      {/* ── Popular Stocks ── */}
       <section className="section">
-        <h2 className="section-title">AI Recommendations</h2>
-        <div className="reco-table-wrapper">
-          <table className="reco-table">
-            <thead>
-              <tr>
-                <th>Symbol</th>
-                <th>Action</th>
-                <th>Current ₹</th>
-                <th>Target ₹</th>
-                <th>Confidence</th>
-                <th>Rationale</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recommendations.map((r) => (
-                <tr key={r.symbol}>
-                  <td className="sym">{r.symbol}</td>
-                  <td>
-                    <span className={`action-badge action-${r.action.toLowerCase()}`}>
-                      {r.action}
-                    </span>
-                  </td>
-                  <td>₹{r.current_price.toFixed(2)}</td>
-                  <td>₹{r.target_price.toFixed(2)}</td>
-                  <td>{(r.confidence * 100).toFixed(0)}%</td>
-                  <td className="rationale">{r.rationale}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <h2 className="section-title">Popular Indian Stocks</h2>
+        <div className="popular-stocks-grid">
+          {popularStocks.map((stockName) => (
+            <div key={stockName} className="popular-stock-card">
+              {stockName}
+            </div>
+          ))}
         </div>
       </section>
     </div>

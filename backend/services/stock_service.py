@@ -1,205 +1,259 @@
 """
-Stock service layer — contains business logic for stock data retrieval
-and recommendation generation. Currently returns mock data; replace
-with real NSE/BSE API calls when API keys are available.
+Indian Market API service layer with Alpha Vantage search.
+- Search: Uses Alpha Vantage SYMBOL_SEARCH for global stock discovery
+- Details: Uses Indian Market API for comprehensive Indian stock data
 """
 
-from datetime import datetime, timezone
-from typing import List
+import os
+import requests
+from typing import List, Dict, Any, Optional
+from dotenv import load_dotenv
 
-from models.stock import (
-    StockSearchResult,
-    StockSearchResponse,
-    Recommendation,
-    RecommendationResponse,
-)
+load_dotenv()
 
-# ---------------------------------------------------------------------------
-# Mock data — replace with real API integration (e.g. NSE, Alpha Vantage)
-# ---------------------------------------------------------------------------
+# API Configuration
+INDIAN_API_BASE_URL = "https://stock.indianapi.in/stock"
+INDIAN_API_KEY = os.getenv("INDIAN_API_KEY", "sk-live-D392kLXX1buGEN22DkWtfkJsFXvl7xpXKUEVdX79")
 
-MOCK_STOCKS: List[dict] = [
-    {
-        "symbol": "RELIANCE",
-        "name": "Reliance Industries Ltd",
-        "price": 2845.60,
-        "change": 32.15,
-        "change_percent": 1.14,
-        "volume": 4_820_000,
-        "market_cap": "19.2L Cr",
-        "sector": "Energy",
-    },
-    {
-        "symbol": "TCS",
-        "name": "Tata Consultancy Services",
-        "price": 3580.25,
-        "change": -18.40,
-        "change_percent": -0.51,
-        "volume": 1_230_000,
-        "market_cap": "13.1L Cr",
-        "sector": "IT",
-    },
-    {
-        "symbol": "INFY",
-        "name": "Infosys Ltd",
-        "price": 1452.75,
-        "change": 21.30,
-        "change_percent": 1.49,
-        "volume": 3_540_000,
-        "market_cap": "6.0L Cr",
-        "sector": "IT",
-    },
-    {
-        "symbol": "HDFC",
-        "name": "HDFC Bank Ltd",
-        "price": 1623.50,
-        "change": -5.20,
-        "change_percent": -0.32,
-        "volume": 5_670_000,
-        "market_cap": "12.4L Cr",
-        "sector": "Finance",
-    },
-    {
-        "symbol": "WIPRO",
-        "name": "Wipro Ltd",
-        "price": 445.30,
-        "change": 8.75,
-        "change_percent": 2.00,
-        "volume": 2_100_000,
-        "market_cap": "2.3L Cr",
-        "sector": "IT",
-    },
-    {
-        "symbol": "BAJFINANCE",
-        "name": "Bajaj Finance Ltd",
-        "price": 7210.00,
-        "change": 110.50,
-        "change_percent": 1.56,
-        "volume": 980_000,
-        "market_cap": "4.4L Cr",
-        "sector": "Finance",
-    },
-    {
-        "symbol": "HCLTECH",
-        "name": "HCL Technologies Ltd",
-        "price": 1305.00,
-        "change": -12.00,
-        "change_percent": -0.91,
-        "volume": 1_450_000,
-        "market_cap": "3.5L Cr",
-        "sector": "IT",
-    },
-    {
-        "symbol": "SBIN",
-        "name": "State Bank of India",
-        "price": 628.40,
-        "change": 9.60,
-        "change_percent": 1.55,
-        "volume": 8_900_000,
-        "market_cap": "5.6L Cr",
-        "sector": "Finance",
-    },
-]
-
-MOCK_RECOMMENDATIONS: List[dict] = [
-    {
-        "symbol": "RELIANCE",
-        "name": "Reliance Industries Ltd",
-        "action": "BUY",
-        "target_price": 3100.00,
-        "current_price": 2845.60,
-        "confidence": 0.82,
-        "rationale": "Strong Q3 results with Jio and retail segments showing robust growth. Expansion in green energy is a positive long-term catalyst.",
-        "sector": "Energy",
-    },
-    {
-        "symbol": "INFY",
-        "name": "Infosys Ltd",
-        "action": "BUY",
-        "target_price": 1650.00,
-        "current_price": 1452.75,
-        "confidence": 0.75,
-        "rationale": "Consistent deal wins, improving margins, and strong management guidance support the upside.",
-        "sector": "IT",
-    },
-    {
-        "symbol": "TCS",
-        "name": "Tata Consultancy Services",
-        "action": "HOLD",
-        "target_price": 3700.00,
-        "current_price": 3580.25,
-        "confidence": 0.68,
-        "rationale": "Stable business, but near-term headwinds from global IT spending slowdown. Hold for long-term compounding.",
-        "sector": "IT",
-    },
-    {
-        "symbol": "HDFC",
-        "name": "HDFC Bank Ltd",
-        "action": "BUY",
-        "target_price": 1850.00,
-        "current_price": 1623.50,
-        "confidence": 0.79,
-        "rationale": "Post-merger integration with HDFC Ltd progressing well; NIMs expected to improve in FY26.",
-        "sector": "Finance",
-    },
-    {
-        "symbol": "WIPRO",
-        "name": "Wipro Ltd",
-        "action": "SELL",
-        "target_price": 400.00,
-        "current_price": 445.30,
-        "confidence": 0.60,
-        "rationale": "Revenue growth remains muted; market share loss to peers warrants caution.",
-        "sector": "IT",
-    },
-]
+ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "K79DCQ4LIP7M2KHL")
+ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query"
 
 
-def search_stocks(query: str) -> StockSearchResponse:
+def clean_company_name(name: str) -> str:
     """
-    Search stocks by symbol or name (case-insensitive substring match).
+    Clean company name for Indian Market API compatibility.
+    Removes common suffixes like Limited, Ltd, Private, etc.
+    
+    Examples:
+        "Tata Steel Limited" -> "Tata Steel"
+        "Reliance Industries Ltd" -> "Reliance Industries"
+        "HDFC Bank Ltd." -> "HDFC Bank"
+    """
+    if not name:
+        return name
+    
+    # Remove common suffixes (case-insensitive)
+    suffixes = [
+        " Limited", " Ltd", " Ltd.", " LTD",
+        " Private Limited", " Pvt Ltd", " Pvt. Ltd.",
+        " Private", " Pvt", " Pvt.",
+        " Incorporated", " Inc", " Inc.",
+        " Corporation", " Corp", " Corp.",
+        " Company", " Co", " Co.",
+        " Public Limited", " PLC",
+    ]
+    
+    cleaned = name
+    for suffix in suffixes:
+        if cleaned.endswith(suffix):
+            cleaned = cleaned[:-len(suffix)]
+    
+    return cleaned.strip()
 
+
+def search_stocks(query: str) -> Dict[str, Any]:
+    """
+    Search for stocks using Alpha Vantage SYMBOL_SEARCH API.
+    Returns dynamic results from global stock markets.
+    
     Args:
-        query: Search string (symbol or company name).
-
+        query: Search keyword (company name or symbol)
+    
     Returns:
-        StockSearchResponse with matching results.
+        Dictionary with search results
     """
-    query_lower = query.strip().lower()
+    if not query or len(query.strip()) < 2:
+        return {
+            "query": query,
+            "suggestions": [],
+            "total": 0,
+            "message": "Enter at least 2 characters to search"
+        }
+    
+    try:
+        # Alpha Vantage SYMBOL_SEARCH API
+        url = f"{ALPHA_VANTAGE_BASE_URL}?function=SYMBOL_SEARCH&keywords={query}&apikey={ALPHA_VANTAGE_API_KEY}"
+        response = requests.get(url, timeout=10)
+        data = response.json()
+        
+        if 'bestMatches' in data and data['bestMatches']:
+            # Extract stock information
+            suggestions = []
+            for match in data['bestMatches']:
+                stock_info = {
+                    "symbol": match.get('1. symbol', 'N/A'),
+                    "name": match.get('2. name', 'N/A'),
+                    "type": match.get('3. type', 'N/A'),
+                    "region": match.get('4. region', 'N/A'),
+                    "currency": match.get('8. currency', 'N/A'),
+                    "matchScore": match.get('9. matchScore', '0')
+                }
+                suggestions.append(stock_info)
+            
+            return {
+                "query": query,
+                "suggestions": suggestions,
+                "total": len(suggestions),
+                "message": f"Found {len(suggestions)} matching stocks"
+            }
+        else:
+            return {
+                "query": query,
+                "suggestions": [],
+                "total": 0,
+                "message": "No stocks found. Try different keywords."
+            }
+    
+    except requests.exceptions.Timeout:
+        return {
+            "query": query,
+            "suggestions": [],
+            "total": 0,
+            "error": "Search timed out - Please try again"
+        }
+    except requests.exceptions.ConnectionError:
+        return {
+            "query": query,
+            "suggestions": [],
+            "total": 0,
+            "error": "Connection error - Check your internet connection"
+        }
+    except Exception as e:
+        return {
+            "query": query,
+            "suggestions": [],
+            "total": 0,
+            "error": f"Search error: {str(e)}"
+        }
 
-    if not query_lower:
-        # Return all stocks when query is empty
-        matched = MOCK_STOCKS
-    else:
-        matched = [
-            s for s in MOCK_STOCKS
-            if query_lower in s["symbol"].lower() or query_lower in s["name"].lower()
-        ]
 
-    results = [StockSearchResult(**s) for s in matched]
-
-    return StockSearchResponse(
-        query=query,
-        results=results,
-        total=len(results),
-    )
-
-
-def get_recommendations() -> RecommendationResponse:
+def get_stock_details(stock_name: str) -> Dict[str, Any]:
     """
-    Return mock stock recommendations.
-
+    Fetch comprehensive stock details from Indian Market API.
+    Works best with full Indian company names (e.g., "Tata Steel", "Reliance Industries")
+    
+    Args:
+        stock_name: Full company name or search query
+    
     Returns:
-        RecommendationResponse with a list of recommendations.
+        Dictionary with comprehensive stock data or error message
     """
-    recommendations = [Recommendation(**r) for r in MOCK_RECOMMENDATIONS]
+    # Clean the company name (remove Limited, Ltd, etc.)
+    cleaned_name = clean_company_name(stock_name)
+    
+    try:
+        # Prepare request with cleaned name
+        url = f"{INDIAN_API_BASE_URL}?name={cleaned_name}"
+        headers = {"x-api-key": INDIAN_API_KEY}
+        
+        print(f"[DEBUG] Fetching stock details for: '{cleaned_name}' (original: '{stock_name}')")
+        print(f"[DEBUG] URL: {url}")
+        
+        # Make API call with longer timeout
+        response = requests.get(url, headers=headers, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            # Debug: Log key data structures
+            print(f"[DEBUG] Response keys: {list(data.keys())}")
+            if 'financials' in data:
+                print(f"[DEBUG] Financials type: {type(data['financials'])}, length: {len(data['financials']) if isinstance(data['financials'], list) else 'not a list'}")
+                if isinstance(data['financials'], list) and len(data['financials']) > 0:
+                    print(f"[DEBUG] First financial item keys: {list(data['financials'][0].keys())}")
+                    if 'stockFinancialMap' in data['financials'][0]:
+                        print(f"[DEBUG] stockFinancialMap keys: {list(data['financials'][0]['stockFinancialMap'].keys())}")
+            else:
+                print("[DEBUG] No 'financials' key in response")
+                
+            if 'shareholding' in data:
+                print(f"[DEBUG] shareholding type: {type(data['shareholding'])}, length: {len(data['shareholding']) if isinstance(data['shareholding'], list) else 'not a list'}")
+                if isinstance(data['shareholding'], list) and len(data['shareholding']) > 0:
+                    print(f"[DEBUG] First shareholding item keys: {list(data['shareholding'][0].keys())}")
+            else:
+                print("[DEBUG] No 'shareholding' key in response")
+            
+            return {
+                "success": True,
+                "data": data,
+                "original_query": stock_name,
+                "cleaned_query": cleaned_name
+            }
+        elif response.status_code == 401:
+            return {
+                "success": False,
+                "error": "Authentication failed - Invalid API key",
+                "status_code": 401
+            }
+        elif response.status_code == 404:
+            return {
+                "success": False,
+                "error": f"Stock '{cleaned_name}' not found. This API works best with Indian stocks.",
+                "status_code": 404,
+                "original_query": stock_name,
+                "cleaned_query": cleaned_name,
+                "suggestion": "Try searching for popular Indian stocks like: Tata Steel, Reliance Industries, HDFC Bank, Infosys, TCS"
+            }
+        else:
+            return {
+                "success": False,
+                "error": f"API error: {response.status_code}",
+                "status_code": response.status_code
+            }
+            
+    except requests.exceptions.Timeout:
+        return {
+            "success": False,
+            "error": "Request timed out - Please try again"
+        }
+    except requests.exceptions.ConnectionError:
+        return {
+            "success": False,
+            "error": "Connection error - Please check your internet connection"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Unexpected error: {str(e)}"
+        }
 
-    return RecommendationResponse(
-        recommendations=recommendations,
-        generated_at=datetime.now(timezone.utc).isoformat(),
-        disclaimer=(
-            "These recommendations are for informational purposes only and do not "
-            "constitute financial advice. Please consult a SEBI-registered advisor "
-            "before making investment decisions."
-        ),
-    )
+
+def get_stock_summary(stock_name: str) -> Dict[str, Any]:
+    """
+    Get a quick summary of key stock metrics.
+    
+    Args:
+        stock_name: Full company name
+    
+    Returns:
+        Dictionary with summary data
+    """
+    details = get_stock_details(stock_name)
+    
+    if not details.get("success"):
+        return details
+    
+    data = details.get("data", {})
+    
+    # Extract key metrics
+    company_name = data.get("companyName", stock_name)
+    industry = data.get("industry", "N/A")
+    current_price = data.get("currentPrice", {})
+    bse_price = current_price.get("BSE", "N/A")
+    nse_price = current_price.get("NSE", "N/A")
+    percent_change = data.get("percentChange", "N/A")
+    year_high = data.get("yearHigh", "N/A")
+    year_low = data.get("yearLow", "N/A")
+    
+    return {
+        "success": True,
+        "summary": {
+            "company_name": company_name,
+            "industry": industry,
+            "bse_price": bse_price,
+            "nse_price": nse_price,
+            "percent_change": percent_change,
+            "year_high": year_high,
+            "year_low": year_low
+        }
+    }

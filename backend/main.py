@@ -1,8 +1,7 @@
 """
-Aladin Backend — FastAPI application entry point.
+Aladin Backend — FastAPI application for Indian stock market data.
 
-Starts the API server with CORS enabled so the React frontend
-(running on a different port or domain) can communicate freely.
+Provides comprehensive stock information using the Indian Market API.
 """
 
 import os
@@ -12,18 +11,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes.stocks import router as stocks_router
 
 # ---------------------------------------------------------------------------
-# App initialisation
+# App initialization
 # ---------------------------------------------------------------------------
 
 app = FastAPI(
     title="Aladin Stock API",
-    description="Backend API for the Aladin stock analysis and recommendation webapp.",
-    version="1.0.0",
+    description="Backend API for Indian stock market data with comprehensive analytics.",
+    version="2.0.0",
 )
 
 # ---------------------------------------------------------------------------
-# CORS — allow all origins in development; tighten in production by setting
-# the ALLOWED_ORIGINS environment variable (comma-separated list).
+# CORS — allow all origins in development; tighten in production
 # ---------------------------------------------------------------------------
 
 allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "*")
@@ -55,4 +53,14 @@ app.include_router(stocks_router)
 @app.get("/", summary="Health check")
 def root():
     """Returns a simple health-check response."""
-    return {"status": "ok", "message": "Aladin API is running 🚀"}
+    return {
+        "status": "ok", 
+        "message": "Aladin API is running 🚀",
+        "version": "2.0.0",
+        "endpoints": {
+            "search": "/api/stocks/search?q=tata",
+            "details": "/api/stocks/details?name=Tata Steel",
+            "summary": "/api/stocks/summary?name=Tata Steel",
+            "popular": "/api/stocks/popular"
+        }
+    }

@@ -1,44 +1,33 @@
 """
 Pydantic models for stock data structures.
+
+Note: Most responses use Dict[str, Any] for flexibility with the
+comprehensive Indian Market API response structure.
 """
 
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 
-class StockSearchResult(BaseModel):
-    """Represents a single stock search result."""
-    symbol: str
+class SearchSuggestion(BaseModel):
+    """Single stock suggestion from search."""
     name: str
-    price: float
-    change: float
-    change_percent: float
-    volume: int
-    market_cap: Optional[str] = None
-    sector: Optional[str] = None
+    matched: bool = True
 
 
-class StockSearchResponse(BaseModel):
-    """Response model for the /search endpoint."""
+class StockSearchRequest(BaseModel):
+    """Request model for stock search."""
     query: str
-    results: List[StockSearchResult]
-    total: int
+    limit: Optional[int] = 10
 
 
-class Recommendation(BaseModel):
-    """Represents a single stock recommendation."""
-    symbol: str
-    name: str
-    action: str          # BUY, SELL, HOLD
-    target_price: float
-    current_price: float
-    confidence: float    # 0.0 to 1.0
-    rationale: str
-    sector: str
+class StockDetailsRequest(BaseModel):
+    """Request model for stock details."""
+    stock_name: str
 
 
-class RecommendationResponse(BaseModel):
-    """Response model for the /recommend endpoint."""
-    recommendations: List[Recommendation]
-    generated_at: str
-    disclaimer: str
+# For backward compatibility, keeping minimal models
+class HealthResponse(BaseModel):
+    """Health check response."""
+    status: str
+    message: str
