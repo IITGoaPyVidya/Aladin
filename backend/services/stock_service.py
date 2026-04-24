@@ -1,13 +1,16 @@
 """
-Indian Market API service layer with Alpha Vantage search.
-- Search: Uses Alpha Vantage SYMBOL_SEARCH for global stock discovery
+Indian Market API service layer with local CSV search.
+- Search: Uses local NSE India ticker CSV for stock discovery
 - Details: Uses Indian Market API for comprehensive Indian stock data
 """
 
 import os
 import requests
+import pandas as pd
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
+from rapidfuzz import fuzz, process
 
 load_dotenv()
 
@@ -15,8 +18,16 @@ load_dotenv()
 INDIAN_API_BASE_URL = "https://stock.indianapi.in/stock"
 INDIAN_API_KEY = os.getenv("INDIAN_API_KEY", "sk-live-D392kLXX1buGEN22DkWtfkJsFXvl7xpXKUEVdX79")
 
-ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "K79DCQ4LIP7M2KHL")
-ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query"
+# CSV file path (relative to this file)
+CSV_PATH = Path(__file__).parent.parent / "data" / "Ticker_List_NSE_India.csv"
+
+# Load stock data once at module level
+try:
+    STOCK_DATA = pd.read_csv(CSV_PATH)
+    print(f"[INFO] Loaded {len(STOCK_DATA)} stocks from CSV")
+except Exception as e:
+    print(f"[ERROR] Failed to load CSV: {e}")
+    STOCK_DATA = pd.DataFrame()
 
 
 def clean_company_name(name: str) -> str:
@@ -53,7 +64,7 @@ def clean_company_name(name: str) -> str:
 
 def search_stocks(query: str) -> Dict[str, Any]:
     """
-    Search for stocks using Alpha Vantage SYMBOL_SEARCH API.
+    Search for stocks using local NSE India CSV data with fuzzy matching.
     
     Args:
         query: Search keyword (company name or symbol)
@@ -69,59 +80,54 @@ def search_stocks(query: str) -> Dict[str, Any]:
             "message": "Enter at least 2 characters to search"
         }
     
+    if STOCK_DATA.empty:
+        return {
+            "query": query,
+            "suggestions": [],
+            "total": 0,
+            "error": "Stock database not available"
+        }
+    
     try:
-        # Alpha Vantage SYMBOL_SEARCH API
-        url = f"{ALPHA_VANTAGE_BASE_URL}?function=SYMBOL_SEARCH&keywords={query}&apikey={ALPHA_VANTAGE_API_KEY}"
-        print(f"[DEBUG] Alpha Vantage URL: {url}")
+        query_lower = query.lower().strip()
         
-        response = requests.get(url, timeout=10)
-        print(f"[DEBUG] Response status: {response.status_code}")
+        # Create searchable text combining symbol and company name
+        STOCK_DATA['search_text'] = (STOCK_DATA['SYMBOL'].astype(str) + ' ' + 
+                                      STOCK_DATA['NAME OF COMPANY'].astype(str)).str.lower()
         
-        data = response.json()
-        print(f"[DEBUG] Response data keys: {list(data.keys())}")
-        print(f"[DEBUG] Full response: {data}")
+        # Use rapidfuzz to find best matches
+        matches = process.extract(
+            query_lower,
+            STOCK_DATA['search_text'].tolist(),
+            scorer=fuzz.WRatio,
+            limit=10
+        )
         
-        # Check for rate limit
-        if 'Note' in data:
-            return {
-                "query": query,
-                "suggestions": [],
-                "total": 0,
-                "error": "API rate limit exceeded. Please try again in a minute."
-            }
-        
-        # Check for API error messages
-        if 'Error Message' in data:
-            return {
-                "query": query,
-                "suggestions": [],
-                "total": 0,
-                "error": f"API Error: {data['Error Message']}"
-            }
-        
-        if 'bestMatches' in data and data['bestMatches']:
-            # Extract stock information
-            suggestions = []
-            for match in data['bestMatches']:
+        # Format results
+        suggestions = []
+        for match_text, score, idx in matches:
+            if score > 40:  # Only include reasonable matches
+                row = STOCK_DATA.iloc[idx]
                 stock_info = {
-                    "symbol": match.get('1. symbol', 'N/A'),
-                    "name": match.get('2. name', 'N/A'),
-                    "type": match.get('3. type', 'N/A'),
-                    "region": match.get('4. region', 'N/A'),
-                    "currency": match.get('8. currency', 'N/A'),
-                    "matchScore": match.get('9. matchScore', '0')
+                    "symbol": str(row['SYMBOL']),
+                    "name": str(row['NAME OF COMPANY']),
+                    "type": "Equity",
+                    "region": "India",
+                    "currency": "INR",
+                    "matchScore": f"{score/100:.4f}"
                 }
                 suggestions.append(stock_info)
-            
-            print(f"[DEBUG] Returning {len(suggestions)} results")
+        
+        print(f"[DEBUG] CSV Search: '{query}' returned {len(suggestions)} results")
+        
+        if suggestions:
             return {
                 "query": query,
                 "suggestions": suggestions,
                 "total": len(suggestions),
-                "message": f"Found {len(suggestions)} matching stocks"
+                "message": f"Found {len(suggestions)} matching Indian stocks"
             }
         else:
-            print(f"[DEBUG] No bestMatches in response")
             return {
                 "query": query,
                 "suggestions": [],
@@ -129,22 +135,8 @@ def search_stocks(query: str) -> Dict[str, Any]:
                 "message": "No stocks found. Try different keywords."
             }
     
-    except requests.exceptions.Timeout:
-        return {
-            "query": query,
-            "suggestions": [],
-            "total": 0,
-            "error": "Search timed out - Please try again"
-        }
-    except requests.exceptions.ConnectionError:
-        return {
-            "query": query,
-            "suggestions": [],
-            "total": 0,
-            "error": "Connection error - Check your internet connection"
-        }
     except Exception as e:
-        print(f"[DEBUG] Exception: {str(e)}")
+        print(f"[ERROR] Search failed: {str(e)}")
         return {
             "query": query,
             "suggestions": [],
