@@ -13,10 +13,10 @@ builder = "DOCKERFILE"
 # ── Backend service ──────────────────────────────────────────────────────────
 [[services]]
 name = "backend"
-source = "backend"
 
 [services.build]
-dockerfilePath = "Dockerfile"
+dockerfilePath = "backend/Dockerfile"
+buildContext = "backend"
 
 [services.deploy]
 startCommand = "python -m uvicorn main:app --host 0.0.0.0 --port $PORT"
@@ -28,10 +28,10 @@ restartPolicyMaxRetries = 10
 # ── Frontend service ─────────────────────────────────────────────────────────
 [[services]]
 name = "frontend"
-source = "frontend"
 
 [services.build]
-dockerfilePath = "Dockerfile"
+dockerfilePath = "frontend/Dockerfile"
+buildContext = "frontend"
 
 [services.deploy]
 healthcheckPath = "/"
