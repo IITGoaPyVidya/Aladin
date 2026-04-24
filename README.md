@@ -93,10 +93,33 @@ npm run dev
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/` | Health check |
-| `GET` | `/api/search?q=<query>` | Search stocks by symbol or name |
-| `GET` | `/api/recommend` | Get AI stock recommendations |
+| `GET` | `/api/stocks/search?q=<query>` | Search stocks globally (Alpha Vantage) |
+| `GET` | `/api/stocks/details?name=<stock>` | Get comprehensive stock details (Indian Market API) |
+| `GET` | `/api/stocks/summary?name=<stock>` | Get quick stock summary |
+| `GET` | `/api/stocks/popular` | Get list of popular Indian stocks |
 
 Interactive API docs are available at **http://localhost:8000/docs** when the backend is running.
+
+---
+
+## 🚂 Railway Deployment
+
+Deploy to Railway in minutes! See [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md) for complete step-by-step guide.
+
+**Quick Deploy:**
+1. Push code to GitHub
+2. Connect to Railway
+3. Set environment variables
+4. Deploy! ✨
+
+Railway will auto-detect the `railway.toml` and deploy both backend and frontend services.
+
+---
+
+## 🔑 API Keys Required
+
+- **Indian Market API**: Get your key at [stock.indianapi.in](https://stock.indianapi.in/)
+- **Alpha Vantage API**: Get your key at [alphavantage.co](https://www.alphavantage.co/support/#api-key)
 
 ---
 
