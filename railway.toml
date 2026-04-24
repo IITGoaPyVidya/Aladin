@@ -5,10 +5,9 @@
 #   - backend  → FastAPI served by Uvicorn
 #   - frontend → React/Vite built and served by nginx
 #
-# Set environment variables in the Railway dashboard (or via railway vars set).
+# Set environment variables in the Railway dashboard (or via railway CLI).
 
 [build]
-# Root-level builder hint — Railway will auto-detect each service's Dockerfile
 builder = "DOCKERFILE"
 
 # ── Backend service ──────────────────────────────────────────────────────────
@@ -17,12 +16,14 @@ name = "backend"
 source = "backend"
 
 [services.build]
-dockerfilePath = "backend/Dockerfile"
+dockerfilePath = "Dockerfile"
 
 [services.deploy]
-startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
-healthcheckPath = "/"
-healthcheckTimeout = 10
+startCommand = "python -m uvicorn main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/docs"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
 
 # ── Frontend service ─────────────────────────────────────────────────────────
 [[services]]
@@ -30,8 +31,10 @@ name = "frontend"
 source = "frontend"
 
 [services.build]
-dockerfilePath = "frontend/Dockerfile"
+dockerfilePath = "Dockerfile"
 
 [services.deploy]
 healthcheckPath = "/"
-healthcheckTimeout = 10
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
