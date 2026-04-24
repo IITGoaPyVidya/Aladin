@@ -28,6 +28,11 @@ export default function Navbar() {
             Search
           </NavLink>
         </li>
+        <li>
+          <NavLink to="/ai" className={({ isActive }) => (isActive ? "active" : "")}>
+            🤖 AI Analyst
+          </NavLink>
+        </li>
       </ul>
     </nav>
   );

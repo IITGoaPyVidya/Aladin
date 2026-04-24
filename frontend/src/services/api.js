@@ -43,4 +43,36 @@ export const getStockSummary = (stockName) =>
 export const getPopularStocks = () =>
   api.get("/api/stocks/popular").then((r) => r.data);
 
+/**
+ * Screen stocks with filters.
+ * @param {object} filters - { min_price, max_price, sector, limit }
+ * @returns {Promise<{success: boolean, results: array}>}
+ */
+export const screenStocks = (filters) =>
+  api.get("/api/stocks/screener", { params: filters }).then((r) => r.data);
+
+/**
+ * Get sector-wise stock data.
+ * @returns {Promise<{success: boolean, sectors: array}>}
+ */
+export const getSectorsData = () =>
+  api.get("/api/stocks/sectors").then((r) => r.data);
+
+/**
+ * Get news sentiment for a stock symbol.
+ * @param {string} symbol - Stock symbol (e.g., "TATASTEEL")
+ * @returns {Promise<{success: boolean, news: array, overall_sentiment: string}>}
+ */
+export const getNewsSentiment = (symbol) =>
+  api.get("/api/stocks/news-sentiment", { params: { symbol } }).then((r) => r.data);
+
+/**
+ * Get AI analyst analysis for a stock.
+ * @param {string} stockName - Company name
+ * @param {string} persona - Analyst persona (fundamental, technical, growth, value, momentum)
+ * @returns {Promise<{success: boolean, analysis: object}>}
+ */
+export const getAIAnalysis = (stockName, persona) =>
+  api.get("/api/stocks/ai-analysis", { params: { stock_name: stockName, persona } }).then((r) => r.data);
+
 export default api;

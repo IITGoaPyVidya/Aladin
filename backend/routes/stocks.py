@@ -5,7 +5,15 @@ Stock-related API routes for Indian Market API.
 from fastapi import APIRouter, Query, HTTPException
 from typing import Dict, Any
 
-from services.stock_service import search_stocks, get_stock_details, get_stock_summary
+from services.stock_service import (
+    search_stocks, 
+    get_stock_details, 
+    get_stock_summary,
+    screen_stocks,
+    get_sectors_data,
+    get_news_sentiment,
+    get_ai_analysis
+)
 
 router = APIRouter(prefix="/api/stocks", tags=["stocks"])
 
@@ -115,3 +123,91 @@ def get_popular() -> Dict[str, Any]:
         "total": len(POPULAR_STOCKS),
         "message": "Popular Indian stocks"
     }
+
+
+@router.get("/screener", summary="Advanced stock screener")
+def screener(
+    min_price: float = Query(default=None, description="Minimum stock price"),
+    max_price: float = Query(default=None, description="Maximum stock price"),
+    sector: str = Query(default=None, description="Filter by sector/industry"),
+    limit: int = Query(default=50, description="Maximum results to return"),
+) -> Dict[str, Any]:
+    """
+    Filter stocks by various criteria.
+    
+    - **min_price**: Minimum stock price (e.g., 100)
+    - **max_price**: Maximum stock price (e.g., 5000)
+    - **sector**: Industry/sector name (e.g., 'IT', 'Banking', 'Pharma')
+    - **limit**: Number of results (default 50)
+    
+    Example:
+    ```
+    GET /api/stocks/screener?min_price=500&max_price=3000&sector=IT&limit=20
+    ```
+    """
+    return screen_stocks(min_price, max_price, sector, limit)
+
+
+@router.get("/sectors", summary="Get sector-wise data")
+def sectors() -> Dict[str, Any]:
+    """
+    Get sector/industry wise stock grouping and performance.
+    
+    Returns top stocks from each major sector:
+    - IT & Technology
+    - Banking & Finance  
+    - Pharmaceuticals
+    - Automotive
+    - Energy & Power
+    - FMCG & Consumer
+    - And more...
+    
+    Example:
+    ```
+    GET /api/stocks/sectors
+    ```
+    """
+    return get_sectors_data()
+
+
+@router.get("/news-sentiment", summary="Get news with sentiment analysis")
+def news_sentiment(
+    symbol: str = Query(..., description="Stock symbol (e.g., TATASTEEL, RELIANCE)"),
+) -> Dict[str, Any]:
+    """
+    Get latest news headlines with AI sentiment analysis.
+    
+    - **symbol**: Stock symbol
+    
+    Returns news with sentiment scores (Bullish, Neutral, Bearish).
+    
+    Example:
+    ```
+    GET /api/stocks/news-sentiment?symbol=TATASTEEL
+    ```
+    """
+    return get_news_sentiment(symbol)
+
+
+@router.get("/ai-analysis", summary="AI analyst personas stock analysis")
+def ai_analysis(
+    stock_name: str = Query(..., description="Company name for analysis"),
+    persona: str = Query(..., description="Analyst persona: fundamental, technical, growth, value, momentum"),
+) -> Dict[str, Any]:
+    """
+    Get stock analysis from different AI analyst personas:
+    
+    - **fundamental**: Deep value investor (Warren Buffett style)
+    - **technical**: Chart pattern analyst (Technical trader)
+    - **growth**: Growth investor (Cathie Wood style)
+    - **value**: Contrarian value investor (Ben Graham style)
+    - **momentum**: Momentum trader (Short-term trends)
+    
+    Returns detailed analysis with BUY/SELL/HOLD recommendation.
+    
+    Example:
+    ```
+    GET /api/stocks/ai-analysis?stock_name=Tata Steel&persona=fundamental
+    ```
+    """
+    return get_ai_analysis(stock_name, persona)

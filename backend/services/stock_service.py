@@ -276,3 +276,312 @@ def get_stock_summary(stock_name: str) -> Dict[str, Any]:
             "year_low": year_low
         }
     }
+
+
+# ============ NEW FEATURES ============
+
+import random
+from datetime import datetime, timedelta
+
+
+def screen_stocks(min_price=None, max_price=None, sector=None, limit=50):
+    """Filter stocks by criteria"""
+    try:
+        # Get random sample from CSV
+        filtered = STOCK_DATA.copy()
+        
+        # For demo, randomly assign prices and sectors
+        filtered['demo_price'] = [random.randint(100, 5000) for _ in range(len(filtered))]
+        
+        # Define sector mapping based on company names
+        def classify_sector(name):
+            name_lower = name.lower()
+            if any(word in name_lower for word in ['tech', 'infotech', 'software', 'systems', 'digital', 'computer']):
+                return 'IT & Technology'
+            elif any(word in name_lower for word in ['bank', 'finance', 'capital', 'insurance', 'nbfc']):
+                return 'Banking & Finance'
+            elif any(word in name_lower for word in ['pharma', 'drug', 'healthcare', 'hospital', 'medical', 'life']):
+                return 'Pharmaceuticals'
+            elif any(word in name_lower for word in ['motor', 'auto', 'vehicle', 'tyre', 'automotive']):
+                return 'Automotive'
+            elif any(word in name_lower for word in ['power', 'energy', 'oil', 'gas', 'petroleum', 'solar']):
+                return 'Energy & Power'
+            elif any(word in name_lower for word in ['consumer', 'fmcg', 'foods', 'beverages', 'retail']):
+                return 'Consumer Goods'
+            elif any(word in name_lower for word in ['steel', 'metal', 'mining', 'cement', 'aluminium']):
+                return 'Materials'
+            else:
+                return 'Others'
+        
+        filtered['sector'] = filtered['NAME OF COMPANY'].apply(classify_sector)
+        
+        # Apply filters
+        if min_price:
+            filtered = filtered[filtered['demo_price'] >= min_price]
+        if max_price:
+            filtered = filtered[filtered['demo_price'] <= max_price]
+        if sector:
+            filtered = filtered[filtered['sector'].str.contains(sector, case=False, na=False)]
+        
+        # Limit results
+        filtered = filtered.head(limit)
+        
+        # Format response
+        results = []
+        for _, row in filtered.iterrows():
+            results.append({
+                'symbol': str(row['SYMBOL']),
+                'name': str(row['NAME OF COMPANY']),
+                'price': float(row['demo_price']),
+                'sector': str(row['sector']),
+                'change': round(random.uniform(-5, 5), 2),
+                'changePercent': round(random.uniform(-10, 10), 2)
+            })
+        
+        return {
+            'success': True,
+            'results': results,
+            'total': len(results),
+            'filters': {
+                'min_price': min_price,
+                'max_price': max_price,
+                'sector': sector
+            }
+        }
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+
+def get_sectors_data():
+    """Get sector-wise stock grouping"""
+    try:
+        # Define sectors with representative stocks
+        sectors = {
+            'IT & Technology': ['TCS', 'INFY', 'WIPRO', 'HCLTECH', 'TECHM'],
+            'Banking & Finance': ['HDFCBANK', 'ICICIBANK', 'SBIN', 'KOTAKBANK', 'AXISBANK'],
+            'Pharmaceuticals': ['SUNPHARMA', 'DRREDDY', 'CIPLA', 'LUPIN', 'AUROPHARMA'],
+            'Automotive': ['TATAMOTORS', 'MARUTI', 'M&M', 'BAJAJ-AUTO', 'HEROMOTOCO'],
+            'Energy & Power': ['RELIANCE', 'ONGC', 'NTPC', 'POWERGRID', 'ADANIGREEN'],
+            'Consumer Goods': ['ITC', 'HINDUNILVR', 'NESTLEIND', 'BRITANNIA', 'DABUR'],
+            'Materials': ['TATASTEEL', 'JSWSTEEL', 'HINDALCO', 'ULTRACEMCO', 'ACC'],
+            'Telecom': ['BHARTIARTL', 'TATACOMM']
+        }
+        
+        sector_data = []
+        for sector_name, stocks in sectors.items():
+            # Generate random performance data
+            performance = round(random.uniform(-3, 6), 2)
+            color = 'green' if performance > 0 else 'red'
+            
+            sector_data.append({
+                'sector': sector_name,
+                'stocks': stocks,
+                'stockCount': len(stocks),
+                'performance': performance,
+                'color': color,
+                'topGainer': random.choice(stocks),
+                'topGainerChange': round(random.uniform(2, 15), 2)
+            })
+        
+        return {
+            'success': True,
+            'sectors': sector_data,
+            'total': len(sector_data)
+        }
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+
+def get_news_sentiment(symbol):
+    """Get news with sentiment analysis"""
+    try:
+        # Mock news data with sentiment
+        news_items = [
+            {
+                'headline': f'{symbol} reports strong quarterly earnings, beats estimates',
+                'sentiment': 'Bullish',
+                'score': 0.85,
+                'date': (datetime.now() - timedelta(hours=2)).strftime('%Y-%m-%d %H:%M'),
+                'source': 'Economic Times'
+            },
+            {
+                'headline': f'Market analysts upgrade {symbol} target price',
+                'sentiment': 'Bullish',
+                'score': 0.72,
+                'date': (datetime.now() - timedelta(hours=5)).strftime('%Y-%m-%d %H:%M'),
+                'source': 'Business Standard'
+            },
+            {
+                'headline': f'{symbol} announces dividend payout',
+                'sentiment': 'Neutral',
+                'score': 0.55,
+                'date': (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d %H:%M'),
+                'source': 'Moneycontrol'
+            },
+            {
+                'headline': f'Concerns over {symbol} debt levels rise',
+                'sentiment': 'Bearish',
+                'score': 0.25,
+                'date': (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d %H:%M'),
+                'source': 'Mint'
+            },
+            {
+                'headline': f'{symbol} stock hits 52-week high on strong demand',
+                'sentiment': 'Bullish',
+                'score': 0.90,
+                'date': (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d %H:%M'),
+                'source': 'LiveMint'
+            }
+        ]
+        
+        # Calculate overall sentiment
+        avg_score = sum(n['score'] for n in news_items) / len(news_items)
+        overall = 'Bullish' if avg_score > 0.6 else 'Bearish' if avg_score < 0.4 else 'Neutral'
+        
+        return {
+            'success': True,
+            'symbol': symbol,
+            'news': news_items,
+            'overall_sentiment': overall,
+            'sentiment_score': round(avg_score, 2),
+            'total': len(news_items)
+        }
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+
+def get_ai_analysis(stock_name, persona):
+    """AI analyst personas analysis"""
+    try:
+        # Fetch stock data first
+        stock_data = get_stock_details(stock_name)
+        if not stock_data.get('success'):
+            return {'success': False, 'error': 'Could not fetch stock data'}
+        
+        data = stock_data['data']
+        
+        # Generate analysis based on persona
+        personas = {
+            'fundamental': {
+                'name': 'Warren Buffett Style - Deep Value',
+                'icon': '💼',
+                'focus': 'Intrinsic Value, Moats, Long-term Growth',
+                'style': 'Conservative, fundamentals-focused analysis'
+            },
+            'technical': {
+                'name': 'Technical Trader',
+                'icon': '📈',
+                'focus': 'Chart Patterns, Support/Resistance, Momentum',
+                'style': 'Data-driven technical analysis'
+            },
+            'growth': {
+                'name': 'Cathie Wood Style - Growth Investor',
+                'icon': '🚀',
+                'focus': 'Innovation, Disruption, Future Potential',
+                'style': 'Aggressive growth-focused'
+            },
+            'value': {
+                'name': 'Ben Graham Style - Contrarian Value',
+                'icon': '💎',
+                'focus': 'Undervalued Assets, Margin of Safety',
+                'style': 'Conservative value investing'
+            },
+            'momentum': {
+                'name': 'Momentum Trader',
+                'icon': '⚡',
+                'focus': 'Price Action, Volume, Short-term Trends',
+                'style': 'Fast-paced momentum trading'
+            }
+        }
+        
+        if persona not in personas:
+            return {'success': False, 'error': 'Invalid persona'}
+        
+        persona_info = personas[persona]
+        
+        # Generate analysis (simplified - you can enhance with actual logic)
+        price = float(data.get('currentPrice', {}).get('NSE', 0) or 0)
+        pe_ratio = random.uniform(10, 40)
+        recommendation = random.choice(['BUY', 'HOLD', 'SELL'])
+        confidence = random.randint(60, 95)
+        
+        # Persona-specific insights
+        if persona == 'fundamental':
+            insights = [
+                f"Strong moat in {data.get('industry', 'sector')} with competitive advantages",
+                f"P/E ratio of {pe_ratio:.1f} suggests {'undervaluation' if pe_ratio < 20 else 'fair valuation'}",
+                "Consistent dividend history shows financial stability",
+                "Management quality is key - look for integrity and capital allocation",
+                "Long-term hold recommended for patient investors"
+            ]
+            target_price = price * random.uniform(1.2, 1.5)
+            timeframe = "12-24 months"
+        
+        elif persona == 'technical':
+            insights = [
+                f"Stock trading {'above' if random.random() > 0.5 else 'below'} 200-day moving average",
+                "RSI indicates neutral momentum - watch for breakouts",
+                "Strong support at ₹" + str(int(price * 0.9)),
+                "Resistance at ₹" + str(int(price * 1.1)),
+                "Volume spike detected - potential breakout incoming"
+            ]
+            target_price = price * random.uniform(1.05, 1.15)
+            timeframe = "1-3 months"
+        
+        elif persona == 'growth':
+            insights = [
+                "Exponential growth potential in emerging market",
+                "Innovation-driven company with strong R&D pipeline",
+                "Market disruption opportunity in next 3-5 years",
+                "Revenue growth trajectory exceeds industry average",
+                "Early-stage investment with high upside potential"
+            ]
+            target_price = price * random.uniform(1.5, 2.0)
+            timeframe = "18-36 months"
+        
+        elif persona == 'value':
+            insights = [
+                "Trading below intrinsic value - margin of safety present",
+                "Asset-rich company with strong balance sheet",
+                "Market overlooking fundamental strength",
+                "Mean reversion opportunity - historically undervalued",
+                "Book value provides downside protection"
+            ]
+            target_price = price * random.uniform(1.3, 1.7)
+            timeframe = "6-18 months"
+        
+        else:  # momentum
+            insights = [
+                "Strong price momentum in recent weeks",
+                "Volume surge indicates institutional buying",
+                "Trend following signal - ride the wave",
+                "Short-term overbought - wait for pullback",
+                "Quick profit potential but manage risk"
+            ]
+            target_price = price * random.uniform(1.08, 1.12)
+            timeframe = "2-4 weeks"
+        
+        return {
+            'success': True,
+            'stock': stock_name,
+            'persona': persona_info,
+            'analysis': {
+                'recommendation': recommendation,
+                'confidence': confidence,
+                'current_price': price,
+                'target_price': round(target_price, 2),
+                'potential_return': round(((target_price - price) / price) * 100, 2),
+                'timeframe': timeframe,
+                'risk_level': random.choice(['Low', 'Medium', 'High']),
+                'insights': insights
+            },
+            'key_metrics': {
+                'pe_ratio': round(pe_ratio, 1),
+                'market_cap': data.get('marketCap', 'N/A'),
+                'industry': data.get('industry', 'N/A'),
+                'year_high': data.get('yearHigh', 'N/A'),
+                'year_low': data.get('yearLow', 'N/A')
+            }
+        }
+    except Exception as e:
+        return {'success': False, 'error': str(e)}

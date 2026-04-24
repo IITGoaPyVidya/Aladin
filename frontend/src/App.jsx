@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Search from "./pages/Search";
 import StockDetails from "./pages/StockDetails";
+import AI from "./pages/AI";
 import "./App.css";
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/ai" element={<AI />} />
           <Route path="/stock/:stockName" element={<StockDetails />} />
         </Routes>
       </main>

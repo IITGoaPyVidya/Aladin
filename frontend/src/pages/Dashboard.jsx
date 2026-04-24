@@ -19,7 +19,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { searchStocks, getPopularStocks } from "../services/api";
+import { searchStocks, getPopularStocks, getSectorsData, screenStocks, getNewsSentiment } from "../services/api";
 import StockCard from "../components/StockCard";
 import "./Dashboard.css";
 
@@ -56,18 +56,54 @@ const VOLUME_DATA = [
 export default function Dashboard() {
   const [stocks, setStocks] = useState([]);
   const [popularStocks, setPopularStocks] = useState([]);
+  const [sectors, setSectors] = useState([]);
+  const [screenResults, setScreenResults] = useState([]);
+  const [newsData, setNewsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Screener filters
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [sectorFilter, setSectorFilter] = useState("");
 
   useEffect(() => {
-    Promise.all([searchStocks(""), getPopularStocks()])
-      .then(([stocksRes, popularRes]) => {
-        setStocks(stocksRes.results.slice(0, 6));
+    Promise.all([
+      searchStocks(""),
+      getPopularStocks(),
+      getSectorsData(),
+      getNewsSentiment("RELIANCE")
+    ])
+      .then(([stocksRes, popularRes, sectorsRes, newsRes]) => {
+        setStocks(stocksRes.results?.slice(0, 6) || []);
         setPopularStocks(popularRes.stocks || []);
+        if (sectorsRes.success) {
+          setSectors(sectorsRes.sectors || []);
+        }
+        if (newsRes.success) {
+          setNewsData(newsRes);
+        }
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleScreener = async () => {
+    try {
+      const filters = {};
+      if (minPrice) filters.min_price = parseFloat(minPrice);
+      if (maxPrice) filters.max_price = parseFloat(maxPrice);
+      if (sectorFilter) filters.sector = sectorFilter;
+      filters.limit = 20;
+
+      const result = await screenStocks(filters);
+      if (result.success) {
+        setScreenResults(result.results || []);
+      }
+    } catch (err) {
+      console.error("Screener error:", err);
+    }
+  };
 
   return (
     <div className="dashboard-page">
@@ -158,6 +194,123 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </section>
       </div>
+
+      {/* ══ NEW: Stock Screener ══ */}
+      <section className="section screener-section">
+        <h2 className="section-title">🔍 Advanced Stock Screener</h2>
+        <div className="screener-filters">
+          <div className="filter-group">
+            <label>Min Price (₹)</label>
+            <input
+              type="number"
+              placeholder="e.g., 100"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              className="filter-input"
+            />
+          </div>
+          <div className="filter-group">
+            <label>Max Price (₹)</label>
+            <input
+              type="number"
+              placeholder="e.g., 5000"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              className="filter-input"
+            />
+          </div>
+          <div className="filter-group">
+            <label>Sector</label>
+            <input
+              type="text"
+              placeholder="e.g., IT, Banking"
+              value={sectorFilter}
+              onChange={(e) => setSectorFilter(e.target.value)}
+              className="filter-input"
+            />
+          </div>
+          <button onClick={handleScreener} className="screener-button">
+            Apply Filters
+          </button>
+        </div>
+        
+        {screenResults.length > 0 && (
+          <div className="screener-results">
+            <h3>Found {screenResults.length} stocks:</h3>
+            <div className="screener-grid">
+              {screenResults.slice(0, 12).map((stock) => (
+                <div key={stock.symbol} className="screener-card">
+                  <div className="screener-symbol">{stock.symbol}</div>
+                  <div className="screener-name">{stock.name}</div>
+                  <div className="screener-price">₹{stock.price}</div>
+                  <div className="screener-sector">{stock.sector}</div>
+                  <div className={`screener-change ${stock.changePercent >= 0 ? 'positive' : 'negative'}`}>
+                    {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent}%
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* ══ NEW: Sectoral Heatmap ══ */}
+      <section className="section heatmap-section">
+        <h2 className="section-title">🎨 Live Sectoral Heatmap</h2>
+        <div className="heatmap-grid">
+          {sectors.map((sector) => (
+            <div 
+              key={sector.sector}
+              className="heatmap-card"
+              style={{
+                background: sector.performance > 0 
+                  ? `linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)`
+                  : `linear-gradient(135deg, #f44336 0%, #e57373 100%)`,
+              }}
+            >
+              <div className="heatmap-sector">{sector.sector}</div>
+              <div className="heatmap-performance">
+                {sector.performance > 0 ? '+' : ''}{sector.performance}%
+              </div>
+              <div className="heatmap-stocks">{sector.stockCount} stocks</div>
+              <div className="heatmap-gainer">
+                Top: {sector.topGainer} (+{sector.topGainerChange}%)
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ══ NEW: News Sentiment ══ */}
+      {newsData && (
+        <section className="section news-section">
+          <h2 className="section-title">📰 Market Sentiment ({newsData.symbol})</h2>
+          <div className="sentiment-header">
+            <div className="sentiment-overall">
+              <span className="sentiment-label">Overall Sentiment:</span>
+              <span className={`sentiment-value ${newsData.overall_sentiment.toLowerCase()}`}>
+                {newsData.overall_sentiment === 'Bullish' ? '😊' : newsData.overall_sentiment === 'Bearish' ? '😞' : '😐'} 
+                {newsData.overall_sentiment}
+              </span>
+              <span className="sentiment-score">Score: {newsData.sentiment_score}</span>
+            </div>
+          </div>
+          <div className="news-grid">
+            {newsData.news.slice(0, 4).map((item, idx) => (
+              <div key={idx} className="news-card">
+                <div className={`news-sentiment ${item.sentiment.toLowerCase()}`}>
+                  {item.sentiment === 'Bullish' ? '😊' : item.sentiment === 'Bearish' ? '😞' : '😐'}
+                </div>
+                <div className="news-headline">{item.headline}</div>
+                <div className="news-meta">
+                  <span className="news-source">{item.source}</span>
+                  <span className="news-date">{item.date}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Popular Stocks ── */}
       <section className="section">
